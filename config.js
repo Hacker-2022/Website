@@ -2,7 +2,7 @@
 // You can easily modify this file to change ad embed codes and settings
 export const adConfig = {
   // Popunder ad embed code
-  popunderEmbedCode: `<script type='text/javascript' src='//pl27078765.profitableratecpm.com/60/6a/c3/606ac38862e56b741c51a4ac384fd999.js'></script>`,
+  popunderEmbedCode: `<script type='text/javascript' src='//pl27078850.profitableratecpm.com/2c/cf/4a/2ccf4adde15c77608f053ee7c15d745d.js'></script>`,
   
   // Native banner ad embed code (4:1 layout)
   nativeBannerEmbedCode: `<script async="async" data-cfasync="false" src="//pl27079327.profitableratecpm.com/15828a75f46035ac68ead98732c8d2bf/invoke.js"></script>
@@ -22,17 +22,17 @@ export const adConfig = {
   
   // Ad distribution settings
   adDistribution: {
-    popunder: 0.5,      // 50% popunder ads
-    nativeBanner: 0.3,  // 30% native banner ads
-    banner: 0.2         // 20% banner ads
+    popunder: 0.3,      // 50% popunder ads
+    nativeBanner: 0.2,  // 30% native banner ads
+    banner: 0.5         // 20% banner ads
   },
   
   // General settings
   settings: {
     autoRefreshEnabled: true,
-    minRefreshInterval: 10000, // 10 seconds
-    maxRefreshInterval: 60000, // 60 seconds
-    popunderChance: 0.15, // 15% chance on random clicks
+    minRefreshInterval: 100000, //  seconds
+    maxRefreshInterval: 600000, //  seconds
+    popunderChance: 0.18, // % chance on random clicks
     loadingDelay: {
       min: 500,
       max: 2500
@@ -41,8 +41,8 @@ export const adConfig = {
     // Auto-clicker settings
     autoClicker: {
       enabled: true,
-      minInterval: 5000,  // 5 seconds
-      maxInterval: 15000, // 15 seconds
+      minInterval: 50000,  //  seconds
+      maxInterval: 150000, //  seconds
       clicksPerSession: 10, // Maximum clicks per session
       targetAdsOnly: true   // Only click on ad elements
     },
@@ -50,9 +50,9 @@ export const adConfig = {
     // Random clicker settings
     randomClicker: {
       enabled: true,
-      probability: 0.08,    // 8% chance per interval
-      interval: 3000,       // Check every 3 seconds
-      maxClicksPerMinute: 5 // Limit random clicks
+      probability: 0.05,    // % chance per interval
+      interval: 10000,       // Check every 3 seconds
+      maxClicksPerMinute: 8 // Limit random clicks
     }
   }
 };
