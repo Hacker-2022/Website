@@ -2,7 +2,8 @@
 // You can easily modify this file to change the ad embed code
 export const adConfig = {
   // Main ad embed code - change this to update all ads
-  embedCode: `<script type='text/javascript' src='//pl27078765.profitableratecpm.com/60/6a/c3/606ac38862e56b741c51a4ac384fd999.js'></script>`,
+  embedCode: `
+  <script type='text/javascript' src='//pl27078850.profitableratecpm.com/2c/cf/4a/2ccf4adde15c77608f053ee7c15d745d.js'></script>`,
   
   // Additional configuration options
   settings: {
