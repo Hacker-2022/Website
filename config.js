@@ -8,9 +8,9 @@ export const adConfig = {
   // Additional configuration options
   settings: {
     autoRefreshEnabled: true,
-    minRefreshInterval: 10000, // 10 seconds
-    maxRefreshInterval: 60000, // 60 seconds
-    popunderChance: 0.1, // 10% chance on random clicks
+    minRefreshInterval: 100000, // 
+    maxRefreshInterval: 600000, //
+    popunderChance: 0.5, // 10% chance on random clicks
     loadingDelay: {
       min: 500,
       max: 2500
