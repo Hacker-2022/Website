@@ -2,7 +2,7 @@
 // You can easily modify this file to change ad embed codes and settings
 export const adConfig = {
   // Popunder ad embed code
-  popunderEmbedCode: `<script type='text/javascript' src='//pl27078850.profitableratecpm.com/2c/cf/4a/2ccf4adde15c77608f053ee7c15d745d.js'></script>`,
+  popunderEmbedCode: `<script type='text/javascript' src='//cemeteryloinrespirator.com/2c/cf/4a/2ccf4adde15c77608f053ee7c15d745d.js'></script>`,
   
   // Native banner ad embed code (4:1 layout)
   nativeBannerEmbedCode: `<script async="async" data-cfasync="false" src="//pl27079327.profitableratecpm.com/15828a75f46035ac68ead98732c8d2bf/invoke.js"></script>
