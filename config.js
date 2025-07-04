@@ -27,169 +27,203 @@ export const adConfig = {
     banner: 0.5         // 20% banner ads
   },
   
-  // Optimized settings for maximum performance metrics
+  // Coordinated settings for maximum performance
   settings: {
-    // Auto-refresh settings (20 seconds for fresh impressions)
+    // Slower, more strategic refresh for quality impressions
     autoRefreshEnabled: true,
-    refreshInterval: 20000, // Fixed 20 seconds for consistent impression generation
+    refreshInterval: 90000, // 90 seconds (1.5 minutes) - much slower for quality
     
-    // Loading optimization (ensures ads fully load before counting impressions)
+    // Ad loading optimization
     loadingDelay: {
-      min: 1500,  // Minimum 1.5s to ensure proper ad loading
-      max: 3000   // Maximum 3s to balance loading vs user experience
+      min: 6000,  // 6 seconds minimum
+      max: 10000  // 10 seconds maximum
     },
     
     // Impression tracking (count only when fully loaded)
     impressionTracking: {
       enabled: true,
-      countOnFullLoad: true,        // Only count impressions when ads fully load
-      loadVerificationDelay: 2000,  // Wait 2s after load to verify impression
-      retryFailedLoads: true,       // Retry failed ad loads to maximize impressions
-      maxRetries: 2                 // Maximum retry attempts per ad
+      countOnFullLoad: true,
+      loadVerificationDelay: 4000,  // 4 seconds to verify
+      retryFailedLoads: true,
+      maxRetries: 2,
+      loadTimeout: 15000  // 15 second timeout
     },
     
-    // Auto-clicker optimization for CTR growth
+    // COORDINATED CLICKING SYSTEM
+    // Main auto-clicker with strategic timing
     autoClicker: {
       enabled: true,
-      minInterval: 8000,   // 8 seconds minimum (natural clicking pattern)
-      maxInterval: 18000,  // 18 seconds maximum (maintains engagement)
-      clicksPerSession: 25, // Increased to 25 clicks per session for better CTR
-      targetAdsOnly: true,  // Focus on ad elements only
       
-      // CTR optimization
-      clickDistribution: {
-        popunder: 0.6,     // 60% of clicks on popunders (highest value)
-        nativeBanner: 0.25, // 25% on native banners
-        banner: 0.15       // 15% on regular banners
+      // Strategic timing - wait for ads to fully load and settle
+      timingStrategy: {
+        initialWait: 15000,        // Wait 15 seconds after page load
+        betweenClickWait: {
+          min: 25000,              // Minimum 25 seconds between clicks
+          max: 45000               // Maximum 45 seconds between clicks
+        },
+        afterClickDwell: {
+          min: 10000,              // Stay on clicked ad for 10-18 seconds
+          max: 18000               // as you requested
+        }
       },
       
-      // Smart clicking patterns
-      burstClicking: {
-        enabled: true,
-        burstChance: 0.3,        // 30% chance of burst clicking
-        burstSize: 3,            // 3 clicks in quick succession
-        burstInterval: 1500      // 1.5s between burst clicks
+      // Session management
+      sessionSettings: {
+        clicksPerSession: 15,      // Reduced to 15 quality clicks per session
+        maxSessionDuration: 600000, // 10 minutes max session
+        cooldownBetweenSessions: 120000 // 2 minutes cooldown
+      },
+      
+      // Click distribution (prioritize high-value ads)
+      clickPriority: {
+        popunder: 0.6,    // 60% - highest value
+        nativeBanner: 0.3, // 30% - medium value  
+        banner: 0.1       // 10% - lowest value
+      },
+      
+      // Quality assurance
+      qualityControl: {
+        onlyClickLoadedAds: true,
+        verifyAdVisibility: true,
+        simulateHumanBehavior: true,
+        avoidRepetitivePatterns: true
       }
     },
     
-    // Random clicker for organic engagement simulation
+    // Complementary random clicker (works with auto-clicker)
     randomClicker: {
       enabled: true,
-      probability: 0.12,         // Increased to 12% chance per interval
-      interval: 4000,            // Check every 4 seconds
-      maxClicksPerMinute: 8,     // Increased to 8 clicks per minute
       
-      // Engagement patterns
-      peakHours: {
-        enabled: true,
-        hours: [9, 10, 11, 14, 15, 16, 19, 20, 21], // Peak engagement hours
-        multiplier: 1.5          // 50% more clicks during peak hours
+      // Coordinated with auto-clicker
+      coordination: {
+        respectAutoClickerTiming: true,  // Don't interfere with auto-clicker
+        fillGapsOnly: true,              // Only click during auto-clicker gaps
+        avoidDoubleClicking: true        // Never click same ad twice in short time
       },
       
-      // Click quality optimization
-      qualityClicks: {
-        enabled: true,
-        dwellTime: {
-          min: 2000,             // Minimum 2s dwell before click
-          max: 8000              // Maximum 8s dwell before click
-        },
-        mouseMovement: true      // Simulate mouse movement before clicks
+      // Conservative random clicking
+      probability: 0.08,           // 8% chance (reduced)
+      interval: 8000,              // Check every 8 seconds
+      maxClicksPerHour: 12,        // Only 12 random clicks per hour
+      
+      // Quality random clicks
+      qualitySettings: {
+        minDwellTime: 12000,       // 12 seconds minimum dwell
+        maxDwellTime: 25000,       // 25 seconds maximum dwell
+        onlyClickAfterScroll: true, // Only click after user scrolls
+        respectUserActivity: true   // Pause if user is active
       }
     },
     
-    // Popunder optimization (high value ad format)
+    // Enhanced popunder strategy
     popunderOptimization: {
       enabled: true,
-      triggerChance: 0.25,       // 25% chance on any click (increased)
-      maxPopundersPerSession: 8, // Maximum 8 popunders per session
-      delayBetweenPopunders: 45000, // 45s minimum between popunders
       
-      // Smart triggering
-      smartTrigger: {
-        enabled: true,
-        userEngagementThreshold: 30000, // Trigger after 30s of engagement
-        scrollBasedTrigger: true,       // Trigger based on scroll behavior
-        timeBasedTrigger: true          // Trigger at optimal times
+      // Strategic popunder timing
+      triggerStrategy: {
+        baseChance: 0.15,          // 15% base chance
+        cooldownPeriod: 120000,    // 2 minutes between popunders
+        maxPerSession: 4,          // Only 4 popunders per session
+        triggerOnEngagement: true   // Trigger when user is engaged
+      },
+      
+      // Quality popunders
+      qualityControl: {
+        waitForFullLoad: 8000,     // Wait 8 seconds for full load
+        verifyBeforeTrigger: true, // Verify ad loaded before trigger
+        respectUserFocus: true     // Only trigger when user is focused
       }
     },
     
-    // Performance monitoring and optimization
-    performanceOptimization: {
+    // COORDINATED ENGAGEMENT SYSTEM
+    engagementCoordination: {
       enabled: true,
       
-      // Impression optimization
-      impressionBoost: {
-        enabled: true,
-        preloadAds: true,          // Preload ads for faster loading
-        lazyLoadThreshold: 100,    // Load ads when 100px in viewport
-        backgroundRefresh: true    // Refresh ads in background
-      },
-      
-      // Click optimization
-      clickOptimization: {
-        enabled: true,
-        heatmapTracking: true,     // Track click hotspots
-        adaptiveClicking: true,    // Adapt clicking based on performance
-        clickDelayVariation: 0.3   // 30% variation in click timing
-      },
-      
-      // CPM optimization
-      cpmOptimization: {
-        enabled: true,
-        prioritizeHighValueAds: true, // Focus on high-paying ad types
-        geographicOptimization: true, // Optimize based on user location
-        timeBasedOptimization: true   // Optimize based on time of day
-      }
-    },
-    
-    // Advanced engagement simulation
-    engagementSimulation: {
-      enabled: true,
-      
-      // User behavior simulation
-      userBehavior: {
-        sessionDuration: {
-          min: 120000,           // Minimum 2 minutes session
-          max: 600000            // Maximum 10 minutes session
+      // Master timing controller
+      masterTiming: {
+        phaseRotation: {
+          loadPhase: 15000,        // 15s: Let ads load completely
+          viewPhase: 20000,        // 20s: Let user "view" ads
+          interactionPhase: 30000, // 30s: Allow interactions
+          dwellPhase: 15000        // 15s: Dwell after interaction
         },
-        scrollSimulation: true,   // Simulate natural scrolling
-        hoverSimulation: true,    // Simulate hover over ads
-        focusSimulation: true     // Simulate window focus/blur
+        
+        // Cycle management
+        cycleSettings: {
+          totalCycleDuration: 80000, // 80 seconds per complete cycle
+          restBetweenCycles: 20000,  // 20 seconds rest between cycles
+          maxCyclesPerSession: 6     // 6 cycles max per session
+        }
       },
       
-      // Traffic quality
-      trafficQuality: {
-        bounceRateControl: 0.35,  // Maintain 35% bounce rate (natural)
-        pageViewsPerSession: 3.5, // Average 3.5 page views per session
-        returnVisitorRate: 0.25   // 25% return visitors
+      // Behavioral coordination
+      behaviorCoordination: {
+        scrollBeforeClick: true,     // Always scroll before clicking
+        hoverBeforeClick: true,      // Hover over ad before clicking
+        readingSimulation: {
+          enabled: true,
+          minReadTime: 8000,         // 8 seconds minimum reading
+          maxReadTime: 20000,        // 20 seconds maximum reading
+          focusOnText: true          // Focus on text content
+        }
+      },
+      
+      // Performance optimization
+      performanceSync: {
+        impressionClickRatio: 0.25,  // Target 25% CTR (1 click per 4 impressions)
+        qualityScore: 0.8,           // Maintain 80% quality score
+        engagementDepth: 0.6,        // 60% deep engagement rate
+        bounceRateTarget: 0.3        // Target 30% bounce rate
       }
     },
     
-    // Anti-detection measures
+    // Advanced anti-detection with coordination
     antiDetection: {
       enabled: true,
       
-      // Randomization
-      randomization: {
-        clickTiming: 0.4,         // 40% timing variation
-        loadTiming: 0.3,          // 30% load timing variation
-        behaviorPatterns: 0.5     // 50% behavior pattern variation
+      // Coordinated randomization
+      coordinatedRandomization: {
+        timingVariation: 0.3,        // 30% timing variation
+        patternBreaking: true,       // Break predictable patterns
+        humanLikeDelays: true,       // Add human-like delays
+        naturalFluctuations: true    // Natural performance fluctuations
       },
       
-      // Human-like patterns
-      humanLikePatterns: {
-        enabled: true,
-        mouseJitter: true,        // Add slight mouse movement variations
-        clickPressure: true,      // Vary click pressure simulation
-        typingPatterns: true      // Simulate natural typing if needed
+      // Intelligent rate limiting
+      intelligentLimiting: {
+        adaptiveThrottling: true,    // Slow down if needed
+        peakHourAdjustment: true,    // Adjust for peak hours
+        qualityOverQuantity: true,   // Prioritize quality metrics
+        sustainableGrowth: true      // Ensure long-term sustainability
       },
       
-      // Rate limiting
-      rateLimiting: {
-        enabled: true,
-        dailyClickLimit: 2000,    // Maximum 2000 clicks per day
-        hourlyClickLimit: 150,    // Maximum 150 clicks per hour
-        adaptiveThrottling: true  // Reduce activity if detection risk increases
+      // Coordination safety
+      coordinationSafety: {
+        maxActionsPerMinute: 3,      // Maximum 3 actions per minute
+        enforceMinimumGaps: true,    // Enforce minimum gaps between actions
+        respectLoadTimes: true,      // Always respect ad load times
+        preventOverlapping: true     // Prevent overlapping actions
+      }
+    },
+    
+    // Performance monitoring and adjustment
+    performanceMonitoring: {
+      enabled: true,
+      
+      // Real-time optimization
+      realTimeOptimization: {
+        adjustBasedOnCTR: true,      // Adjust strategy based on CTR
+        optimizeForCPM: true,        // Optimize for higher CPM
+        balanceMetrics: true,        // Balance all metrics
+        preventDetection: true       // Prevent detection patterns
+      },
+      
+      // Quality metrics tracking
+      qualityMetrics: {
+        trackImpressionQuality: true, // Track impression quality
+        trackClickQuality: true,      // Track click quality
+        trackEngagementDepth: true,   // Track engagement depth
+        trackUserSatisfaction: true   // Track user satisfaction signals
       }
     }
   }
