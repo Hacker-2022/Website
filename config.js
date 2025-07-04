@@ -34,15 +34,15 @@ export const adConfig = {
     maxRefreshInterval: 6000000, //  seconds
     popunderChance: 0.25, // % chance on random clicks
     loadingDelay: {
-      min: 50000,
-      max: 250000
+      min: 10000,
+      max: 15000
     },
     
     // Auto-clicker settings
     autoClicker: {
       enabled: true,
-      minInterval: 500000,  //  seconds
-      maxInterval: 1500000, //  seconds
+      minInterval: 20000,  //  seconds
+      maxInterval: 20000, //  seconds
       clicksPerSession: 18, // Maximum clicks per session
       targetAdsOnly: true   // Only click on ad elements
     },
@@ -50,8 +50,8 @@ export const adConfig = {
     // Random clicker settings
     randomClicker: {
       enabled: true,
-      probability: 5.0,    // % chance per interval
-      interval: 100000,       // Check every 3 seconds
+      probability: 50.0,    // % chance per interval
+      interval: 20000,       // Check every 3 seconds
       maxClicksPerMinute: 81 // Limit random clicks
     }
   }
