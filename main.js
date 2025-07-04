@@ -1,184 +1,445 @@
 import { adConfig } from './config.js';
 
-class EnhancedAdManager {
+class CoordinatedAdManager {
   constructor() {
-    // Load embed codes from configuration
-    this.popunderEmbedCode = adConfig.popunderEmbedCode;
-    this.nativeBannerEmbedCode = adConfig.nativeBannerEmbedCode;
-    this.bannerEmbedCode = adConfig.bannerEmbedCode;
-    this.adDistribution = adConfig.adDistribution;
+    // Load configuration
+    this.config = adConfig;
     this.settings = adConfig.settings;
     
-    this.refreshInterval = null;
+    // State management
     this.isAdsActive = false;
-    this.adClickHandlers = [];
-    this.autoClickerInterval = null;
-    this.randomClickerInterval = null;
-    this.clickStats = {
-      autoClicks: 0,
-      randomClicks: 0,
-      sessionStart: Date.now()
+    this.currentPhase = 'loading';
+    this.phaseStartTime = 0;
+    this.sessionStartTime = 0;
+    this.cycleCount = 0;
+    
+    // Coordination state
+    this.lastClickTime = 0;
+    this.lastPopunderTime = 0;
+    this.clickedAds = new Set();
+    this.currentCycleDuration = 0;
+    
+    // Performance tracking
+    this.stats = {
+      impressions: 0,
+      clicks: 0,
+      popunders: 0,
+      sessionDuration: 0,
+      qualityScore: 0
     };
+    
+    // Timers and intervals
+    this.masterTimer = null;
+    this.phaseTimer = null;
+    this.refreshTimer = null;
+    this.coordinationTimer = null;
     
     this.init();
   }
 
   init() {
     this.setupEventListeners();
-    this.initializeClickers();
+    console.log('Coordinated Ad Manager initialized');
   }
 
   setupEventListeners() {
     const watchAdsBtn = document.getElementById('watchAdsBtn');
-    watchAdsBtn.addEventListener('click', () => this.startWatchingAds());
+    watchAdsBtn.addEventListener('click', () => this.startCoordinatedSession());
   }
 
-  initializeClickers() {
-    // Start auto-clicker if enabled
-    if (this.settings.autoClicker.enabled) {
-      this.startAutoClicker();
-    }
-    
-    // Start random clicker if enabled
-    if (this.settings.randomClicker.enabled) {
-      this.startRandomClicker();
-    }
-  }
-
-  startAutoClicker() {
-    const autoClick = () => {
-      if (!this.isAdsActive) return;
-      
-      const sessionDuration = Date.now() - this.clickStats.sessionStart;
-      const maxClicks = this.settings.autoClicker.clicksPerSession;
-      
-      // Check if we've exceeded max clicks for this session
-      if (this.clickStats.autoClicks >= maxClicks) {
-        console.log('Auto-clicker: Maximum clicks reached for this session');
-        return;
-      }
-      
-      // Find clickable ad elements
-      const clickableAds = this.settings.autoClicker.targetAdsOnly 
-        ? document.querySelectorAll('.popunder-trigger, .native-banner-container, .banner-container')
-        : document.querySelectorAll('.ad-space');
-      
-      if (clickableAds.length > 0) {
-        const randomAd = clickableAds[Math.floor(Math.random() * clickableAds.length)];
-        this.simulateClick(randomAd, 'auto');
-        this.clickStats.autoClicks++;
-        console.log(`Auto-clicker: Click #${this.clickStats.autoClicks} executed`);
-      }
-      
-      // Schedule next auto-click
-      const nextInterval = Math.random() * 
-        (this.settings.autoClicker.maxInterval - this.settings.autoClicker.minInterval) + 
-        this.settings.autoClicker.minInterval;
-      
-      this.autoClickerInterval = setTimeout(autoClick, nextInterval);
-    };
-    
-    // Start first auto-click
-    const initialDelay = Math.random() * 
-      (this.settings.autoClicker.maxInterval - this.settings.autoClicker.minInterval) + 
-      this.settings.autoClicker.minInterval;
-    
-    this.autoClickerInterval = setTimeout(autoClick, initialDelay);
-  }
-
-  startRandomClicker() {
-    const randomClick = () => {
-      if (!this.isAdsActive) return;
-      
-      // Check rate limiting
-      const now = Date.now();
-      const oneMinuteAgo = now - 60000;
-      const recentClicks = this.clickStats.randomClicks;
-      
-      if (recentClicks >= this.settings.randomClicker.maxClicksPerMinute) {
-        console.log('Random clicker: Rate limit reached');
-        return;
-      }
-      
-      // Random probability check
-      if (Math.random() < this.settings.randomClicker.probability) {
-        const allElements = document.querySelectorAll('.ad-space, .popunder-trigger, .native-banner-container, .banner-container');
-        
-        if (allElements.length > 0) {
-          const randomElement = allElements[Math.floor(Math.random() * allElements.length)];
-          this.simulateClick(randomElement, 'random');
-          this.clickStats.randomClicks++;
-          console.log(`Random clicker: Click executed (${this.clickStats.randomClicks} this minute)`);
-        }
-      }
-    };
-    
-    this.randomClickerInterval = setInterval(randomClick, this.settings.randomClicker.interval);
-  }
-
-  simulateClick(element, type = 'manual') {
-    if (!element) return;
-    
-    try {
-      // Create and dispatch click events
-      const clickEvent = new MouseEvent('click', {
-        bubbles: true,
-        cancelable: true,
-        view: window
-      });
-      
-      const mousedownEvent = new MouseEvent('mousedown', {
-        bubbles: true,
-        cancelable: true,
-        view: window
-      });
-      
-      // Add visual feedback for auto/random clicks
-      if (type !== 'manual') {
-        element.style.transform = 'scale(0.95)';
-        element.style.transition = 'transform 0.1s ease';
-        
-        setTimeout(() => {
-          element.style.transform = '';
-        }, 100);
-      }
-      
-      element.dispatchEvent(mousedownEvent);
-      element.dispatchEvent(clickEvent);
-      
-      console.log(`${type} click simulated on:`, element.className);
-      
-    } catch (error) {
-      console.error(`Error simulating ${type} click:`, error);
-    }
-  }
-
-  startWatchingAds() {
+  startCoordinatedSession() {
     if (this.isAdsActive) return;
     
-    this.isAdsActive = true;
-    this.clickStats.sessionStart = Date.now();
-    this.clickStats.autoClicks = 0;
-    this.clickStats.randomClicks = 0;
+    console.log('🚀 Starting coordinated ad session...');
     
-    // Hide button and show ads
+    this.isAdsActive = true;
+    this.sessionStartTime = Date.now();
+    this.cycleCount = 0;
+    this.currentPhase = 'loading';
+    this.phaseStartTime = Date.now();
+    
+    // Reset stats
+    this.stats = {
+      impressions: 0,
+      clicks: 0,
+      popunders: 0,
+      sessionDuration: 0,
+      qualityScore: 0
+    };
+    
+    // Show ads container
+    this.showAdsContainer();
+    
+    // Start the master coordination system
+    this.startMasterCoordination();
+    
+    // Load initial ads
+    this.loadAllAds();
+    
+    console.log('📊 Session started - Coordinated system active');
+  }
+
+  showAdsContainer() {
     const buttonContainer = document.getElementById('buttonContainer');
     const adsContainer = document.getElementById('adsContainer');
     
     buttonContainer.style.display = 'none';
     adsContainer.style.display = 'grid';
-    
-    // Load all ads with different types
-    this.loadAllAds();
-    
-    // Start auto-refresh if enabled
-    if (this.settings.autoRefreshEnabled) {
-      this.startAutoRefresh();
-    }
-    
-    console.log('Ads session started - Auto-clicker and Random clicker are active');
   }
 
+  startMasterCoordination() {
+    const { masterTiming } = this.settings.engagementCoordination;
+    
+    this.coordinationTimer = setInterval(() => {
+      this.executeCoordinatedCycle();
+    }, 1000); // Check every second
+    
+    // Start refresh timer (much slower now)
+    this.refreshTimer = setInterval(() => {
+      this.coordinatedRefresh();
+    }, this.settings.refreshInterval);
+  }
+
+  executeCoordinatedCycle() {
+    if (!this.isAdsActive) return;
+    
+    const now = Date.now();
+    const phaseElapsed = now - this.phaseStartTime;
+    const { phaseRotation, cycleSettings } = this.settings.engagementCoordination.masterTiming;
+    
+    // Update session duration
+    this.stats.sessionDuration = now - this.sessionStartTime;
+    
+    // Check if we should end session
+    if (this.stats.sessionDuration > this.settings.autoClicker.sessionSettings.maxSessionDuration) {
+      this.endSession();
+      return;
+    }
+    
+    // Phase management
+    switch (this.currentPhase) {
+      case 'loading':
+        if (phaseElapsed >= phaseRotation.loadPhase) {
+          this.transitionToPhase('viewing');
+        }
+        break;
+        
+      case 'viewing':
+        if (phaseElapsed >= phaseRotation.viewPhase) {
+          this.transitionToPhase('interaction');
+        }
+        break;
+        
+      case 'interaction':
+        this.handleInteractionPhase();
+        if (phaseElapsed >= phaseRotation.interactionPhase) {
+          this.transitionToPhase('dwelling');
+        }
+        break;
+        
+      case 'dwelling':
+        if (phaseElapsed >= phaseRotation.dwellPhase) {
+          this.completeCycle();
+        }
+        break;
+        
+      case 'resting':
+        if (phaseElapsed >= cycleSettings.restBetweenCycles) {
+          this.transitionToPhase('loading');
+        }
+        break;
+    }
+  }
+
+  transitionToPhase(newPhase) {
+    console.log(`🔄 Phase transition: ${this.currentPhase} → ${newPhase}`);
+    this.currentPhase = newPhase;
+    this.phaseStartTime = Date.now();
+    
+    switch (newPhase) {
+      case 'viewing':
+        this.simulateViewing();
+        break;
+      case 'interaction':
+        this.prepareForInteraction();
+        break;
+      case 'dwelling':
+        this.startDwelling();
+        break;
+    }
+  }
+
+  simulateViewing() {
+    console.log('👀 Simulating viewing phase...');
+    
+    // Simulate scrolling
+    this.simulateScroll();
+    
+    // Simulate hover over ads
+    setTimeout(() => {
+      this.simulateHover();
+    }, 3000);
+  }
+
+  prepareForInteraction() {
+    console.log('🎯 Preparing for interaction phase...');
+    
+    // Check if we should click an ad
+    const timeSinceLastClick = Date.now() - this.lastClickTime;
+    const minTimeBetweenClicks = this.settings.autoClicker.timingStrategy.betweenClickWait.min;
+    
+    if (timeSinceLastClick >= minTimeBetweenClicks) {
+      this.scheduleCoordinatedClick();
+    }
+    
+    // Check if we should trigger popunder
+    this.checkPopunderTrigger();
+  }
+
+  handleInteractionPhase() {
+    // This runs continuously during interaction phase
+    const phaseElapsed = Date.now() - this.phaseStartTime;
+    
+    // Random interaction chance (but coordinated)
+    if (phaseElapsed > 10000 && Math.random() < 0.3) { // 30% chance after 10 seconds
+      this.executeRandomInteraction();
+    }
+  }
+
+  scheduleCoordinatedClick() {
+    const availableAds = this.getClickableAds();
+    if (availableAds.length === 0) return;
+    
+    // Select ad based on priority
+    const selectedAd = this.selectAdByPriority(availableAds);
+    if (!selectedAd) return;
+    
+    // Schedule click with human-like delay
+    const delay = Math.random() * 5000 + 2000; // 2-7 seconds
+    
+    setTimeout(() => {
+      this.executeCoordinatedClick(selectedAd);
+    }, delay);
+  }
+
+  selectAdByPriority(availableAds) {
+    const { clickPriority } = this.settings.autoClicker;
+    const random = Math.random();
+    
+    // Filter ads by type
+    const popunderAds = availableAds.filter(ad => ad.classList.contains('popunder-trigger'));
+    const nativeBannerAds = availableAds.filter(ad => ad.classList.contains('native-banner-container'));
+    const bannerAds = availableAds.filter(ad => ad.classList.contains('banner-container'));
+    
+    // Select based on priority
+    if (random < clickPriority.popunder && popunderAds.length > 0) {
+      return popunderAds[Math.floor(Math.random() * popunderAds.length)];
+    } else if (random < clickPriority.popunder + clickPriority.nativeBanner && nativeBannerAds.length > 0) {
+      return nativeBannerAds[Math.floor(Math.random() * nativeBannerAds.length)];
+    } else if (bannerAds.length > 0) {
+      return bannerAds[Math.floor(Math.random() * bannerAds.length)];
+    }
+    
+    // Fallback to any available ad
+    return availableAds[Math.floor(Math.random() * availableAds.length)];
+  }
+
+  executeCoordinatedClick(adElement) {
+    if (!adElement || this.clickedAds.has(adElement)) return;
+    
+    console.log('🖱️ Executing coordinated click...');
+    
+    // Mark as clicked
+    this.clickedAds.add(adElement);
+    this.lastClickTime = Date.now();
+    this.stats.clicks++;
+    
+    // Add visual feedback
+    this.addClickFeedback(adElement);
+    
+    // Simulate human-like click
+    this.simulateHumanClick(adElement);
+    
+    // Start dwell timer (10-18 seconds as requested)
+    const dwellTime = Math.random() * 8000 + 10000; // 10-18 seconds
+    
+    setTimeout(() => {
+      this.completeDwell(adElement);
+    }, dwellTime);
+  }
+
+  completeDwell(adElement) {
+    console.log('⏱️ Dwell completed, ready for next action');
+    
+    // Remove from clicked ads after dwell
+    setTimeout(() => {
+      this.clickedAds.delete(adElement);
+    }, 30000); // Allow re-clicking after 30 seconds
+  }
+
+  executeRandomInteraction() {
+    if (!this.settings.randomClicker.enabled) return;
+    
+    const timeSinceLastClick = Date.now() - this.lastClickTime;
+    const minGap = 15000; // 15 seconds minimum gap
+    
+    if (timeSinceLastClick < minGap) return;
+    
+    const availableAds = this.getClickableAds();
+    if (availableAds.length === 0) return;
+    
+    // Random selection for random clicker
+    const randomAd = availableAds[Math.floor(Math.random() * availableAds.length)];
+    
+    console.log('🎲 Executing random interaction...');
+    this.executeCoordinatedClick(randomAd);
+  }
+
+  checkPopunderTrigger() {
+    if (!this.settings.popunderOptimization.enabled) return;
+    
+    const timeSinceLastPopunder = Date.now() - this.lastPopunderTime;
+    const { triggerStrategy } = this.settings.popunderOptimization;
+    
+    if (timeSinceLastPopunder >= triggerStrategy.cooldownPeriod) {
+      if (Math.random() < triggerStrategy.baseChance) {
+        this.triggerCoordinatedPopunder();
+      }
+    }
+  }
+
+  triggerCoordinatedPopunder() {
+    console.log('🪟 Triggering coordinated popunder...');
+    
+    this.lastPopunderTime = Date.now();
+    this.stats.popunders++;
+    
+    // Use the existing popunder logic
+    this.triggerPopunder();
+  }
+
+  startDwelling() {
+    console.log('🏠 Starting dwell phase...');
+    // Simulate user reading/viewing content
+  }
+
+  completeCycle() {
+    this.cycleCount++;
+    console.log(`✅ Cycle ${this.cycleCount} completed`);
+    
+    const { cycleSettings } = this.settings.engagementCoordination.masterTiming;
+    
+    if (this.cycleCount >= cycleSettings.maxCyclesPerSession) {
+      this.endSession();
+    } else {
+      this.transitionToPhase('resting');
+    }
+  }
+
+  coordinatedRefresh() {
+    if (this.currentPhase === 'interaction' || this.currentPhase === 'dwelling') {
+      // Don't refresh during critical phases
+      return;
+    }
+    
+    console.log('🔄 Coordinated refresh...');
+    this.refreshAllAds();
+  }
+
+  getClickableAds() {
+    const allAds = document.querySelectorAll('.popunder-trigger, .native-banner-container, .banner-container');
+    return Array.from(allAds).filter(ad => {
+      // Only return ads that are loaded and visible
+      return ad.offsetParent !== null && !this.clickedAds.has(ad);
+    });
+  }
+
+  addClickFeedback(element) {
+    const feedback = document.createElement('div');
+    feedback.className = 'click-feedback';
+    feedback.textContent = '✓ Clicked';
+    feedback.style.cssText = `
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background: rgba(76, 175, 80, 0.9);
+      color: white;
+      padding: 4px 8px;
+      border-radius: 12px;
+      font-size: 0.7rem;
+      font-weight: bold;
+      z-index: 1000;
+      animation: fadeInOut 3s ease-in-out;
+    `;
+    
+    element.style.position = 'relative';
+    element.appendChild(feedback);
+    
+    setTimeout(() => {
+      if (feedback.parentNode) {
+        feedback.parentNode.removeChild(feedback);
+      }
+    }, 3000);
+  }
+
+  simulateHumanClick(element) {
+    // Simulate mouse movement
+    const rect = element.getBoundingClientRect();
+    const x = rect.left + rect.width / 2;
+    const y = rect.top + rect.height / 2;
+    
+    // Create and dispatch events
+    const mouseEvent = new MouseEvent('click', {
+      bubbles: true,
+      cancelable: true,
+      clientX: x,
+      clientY: y
+    });
+    
+    element.dispatchEvent(mouseEvent);
+  }
+
+  simulateScroll() {
+    const scrollAmount = Math.random() * 300 + 100;
+    window.scrollBy({
+      top: scrollAmount,
+      behavior: 'smooth'
+    });
+  }
+
+  simulateHover() {
+    const ads = document.querySelectorAll('.ad-space');
+    if (ads.length === 0) return;
+    
+    const randomAd = ads[Math.floor(Math.random() * ads.length)];
+    const hoverEvent = new MouseEvent('mouseenter', { bubbles: true });
+    randomAd.dispatchEvent(hoverEvent);
+    
+    setTimeout(() => {
+      const leaveEvent = new MouseEvent('mouseleave', { bubbles: true });
+      randomAd.dispatchEvent(leaveEvent);
+    }, 2000);
+  }
+
+  endSession() {
+    console.log('🏁 Ending coordinated session...');
+    
+    this.isAdsActive = false;
+    
+    // Clear all timers
+    if (this.coordinationTimer) clearInterval(this.coordinationTimer);
+    if (this.refreshTimer) clearInterval(this.refreshTimer);
+    
+    // Log final stats
+    console.log('📊 Final Session Stats:', this.stats);
+    
+    // Schedule next session
+    setTimeout(() => {
+      console.log('🔄 Ready for next session');
+    }, this.settings.autoClicker.sessionSettings.cooldownBetweenSessions);
+  }
+
+  // Existing methods (adapted for coordination)
   loadAllAds() {
     const adSpaces = document.querySelectorAll('.ad-space');
     
@@ -190,7 +451,7 @@ class EnhancedAdManager {
 
   determineAdType() {
     const random = Math.random();
-    const { popunder, nativeBanner, banner } = this.adDistribution;
+    const { popunder, nativeBanner, banner } = this.config.adDistribution;
     
     if (random < popunder) {
       return 'popunder';
@@ -210,16 +471,19 @@ class EnhancedAdManager {
       </div>
     `;
     
-    // Simulate realistic loading delay
-    const delay = Math.random() * (this.settings.loadingDelay.max - this.settings.loadingDelay.min) + this.settings.loadingDelay.min;
+    // Use coordinated loading delay
+    const delay = Math.random() * 
+      (this.settings.loadingDelay.max - this.settings.loadingDelay.min) + 
+      this.settings.loadingDelay.min;
+    
     setTimeout(() => {
       this.insertAd(container, index, adType);
+      this.stats.impressions++;
     }, delay);
   }
 
   insertAd(container, index, adType) {
     try {
-      // Clear loading state
       container.innerHTML = '';
       
       switch (adType) {
@@ -241,30 +505,16 @@ class EnhancedAdManager {
   }
 
   insertPopunderAd(container, index) {
-    // Create a clickable area that will trigger popunder
     const clickableArea = document.createElement('div');
     clickableArea.className = 'popunder-trigger';
     clickableArea.innerHTML = this.createVisibleAdContent(index, 'popunder');
     
-    // Add click handler for popunder
-    const clickHandler = (e) => {
-      e.preventDefault();
-      this.triggerPopunder();
-      return false;
-    };
-    
-    clickableArea.addEventListener('click', clickHandler);
-    clickableArea.addEventListener('mousedown', clickHandler);
-    
     container.appendChild(clickableArea);
     
-    // Store handler for cleanup
-    this.adClickHandlers.push({ element: clickableArea, handler: clickHandler });
-    
-    // Also inject the actual ad script for additional functionality
+    // Inject script after delay
     setTimeout(() => {
-      this.injectAdScript(container, this.popunderEmbedCode);
-    }, 1000);
+      this.injectAdScript(container, this.config.popunderEmbedCode);
+    }, 2000);
   }
 
   insertNativeBannerAd(container, index) {
@@ -272,22 +522,11 @@ class EnhancedAdManager {
     bannerContainer.className = 'native-banner-container';
     bannerContainer.innerHTML = this.createVisibleAdContent(index, 'nativeBanner');
     
-    // Add click handler
-    const clickHandler = (e) => {
-      console.log('Native banner ad clicked');
-      this.triggerAdInteraction('nativeBanner');
-    };
-    
-    bannerContainer.addEventListener('click', clickHandler);
     container.appendChild(bannerContainer);
     
-    // Store handler for cleanup
-    this.adClickHandlers.push({ element: bannerContainer, handler: clickHandler });
-    
-    // Inject native banner script
     setTimeout(() => {
-      this.injectAdScript(container, this.nativeBannerEmbedCode);
-    }, 500);
+      this.injectAdScript(container, this.config.nativeBannerEmbedCode);
+    }, 1500);
   }
 
   insertBannerAd(container, index) {
@@ -295,33 +534,20 @@ class EnhancedAdManager {
     bannerContainer.className = 'banner-container';
     bannerContainer.innerHTML = this.createVisibleAdContent(index, 'banner');
     
-    // Add click handler
-    const clickHandler = (e) => {
-      console.log('Banner ad clicked');
-      this.triggerAdInteraction('banner');
-    };
-    
-    bannerContainer.addEventListener('click', clickHandler);
     container.appendChild(bannerContainer);
     
-    // Store handler for cleanup
-    this.adClickHandlers.push({ element: bannerContainer, handler: clickHandler });
-    
-    // Inject banner script
     setTimeout(() => {
-      this.injectAdScript(container, this.bannerEmbedCode);
-    }, 500);
+      this.injectAdScript(container, this.config.bannerEmbedCode);
+    }, 1000);
   }
 
   injectAdScript(container, embedCode) {
     try {
-      // Create a hidden container for the actual ad script
       const scriptContainer = document.createElement('div');
       scriptContainer.style.display = 'none';
       scriptContainer.innerHTML = embedCode;
       container.appendChild(scriptContainer);
       
-      // Execute any scripts in the embed code
       const scripts = scriptContainer.querySelectorAll('script');
       scripts.forEach(script => {
         const newScript = document.createElement('script');
@@ -388,7 +614,6 @@ class EnhancedAdManager {
 
   triggerPopunder() {
     try {
-      // Method 1: Open popunder window
       const popunder = window.open(
         'about:blank',
         '_blank',
@@ -396,7 +621,6 @@ class EnhancedAdManager {
       );
       
       if (popunder) {
-        // Inject the ad script into the popunder
         popunder.document.write(`
           <!DOCTYPE html>
           <html>
@@ -411,14 +635,13 @@ class EnhancedAdManager {
           <body>
             <div class="ad-container">
               <div class="loading">Loading premium content...</div>
-              ${this.popunderEmbedCode}
+              ${this.config.popunderEmbedCode}
             </div>
           </body>
           </html>
         `);
         popunder.document.close();
         
-        // Focus back to main window (popunder effect)
         setTimeout(() => {
           window.focus();
           if (popunder && !popunder.closed) {
@@ -427,144 +650,43 @@ class EnhancedAdManager {
         }, 100);
       }
       
-      // Method 2: Also try to execute the ad script in current page
-      this.injectAdScript(document.head, this.popunderEmbedCode);
-      
     } catch (error) {
       console.error('Error triggering popunder:', error);
     }
   }
 
-  triggerAdInteraction(adType) {
-    try {
-      // Log the interaction
-      console.log(`${adType} ad interaction triggered`);
-      
-      // Execute the appropriate ad script
-      const embedCode = adType === 'nativeBanner' ? this.nativeBannerEmbedCode : this.bannerEmbedCode;
-      this.injectAdScript(document.head, embedCode);
-      
-    } catch (error) {
-      console.error(`Error triggering ${adType} ad interaction:`, error);
-    }
-  }
-
-  startAutoRefresh() {
-    // Random refresh interval based on settings
-    const refreshTime = Math.floor(Math.random() * (this.settings.maxRefreshInterval - this.settings.minRefreshInterval)) + this.settings.minRefreshInterval;
-    
-    this.refreshInterval = setTimeout(() => {
-      this.refreshAllAds();
-    }, refreshTime);
-  }
-
   refreshAllAds() {
-    console.log('Refreshing all ads...');
+    console.log('🔄 Refreshing all ads...');
     
-    // Clean up old click handlers
-    this.adClickHandlers.forEach(({ element, handler }) => {
-      if (element && handler) {
-        element.removeEventListener('click', handler);
-        element.removeEventListener('mousedown', handler);
-      }
-    });
-    this.adClickHandlers = [];
-    
-    // Add subtle refresh animation
     const adsContainer = document.getElementById('adsContainer');
     adsContainer.style.opacity = '0.7';
     
     setTimeout(() => {
       this.loadAllAds();
       adsContainer.style.opacity = '1';
-      
-      // Schedule next refresh if enabled
-      if (this.settings.autoRefreshEnabled) {
-        this.startAutoRefresh();
-      }
-    }, 500);
+    }, 1000);
   }
 
-  // Method to update embed codes dynamically
-  updateEmbedCodes(newCodes) {
-    if (newCodes.popunder) this.popunderEmbedCode = newCodes.popunder;
-    if (newCodes.nativeBanner) this.nativeBannerEmbedCode = newCodes.nativeBanner;
-    if (newCodes.banner) this.bannerEmbedCode = newCodes.banner;
-    
-    if (this.isAdsActive) {
-      this.refreshAllAds();
-    }
-  }
-
-  // Method to update settings
-  updateSettings(newSettings) {
-    this.settings = { ...this.settings, ...newSettings };
-    
-    // Restart clickers if settings changed
-    if (newSettings.autoClicker || newSettings.randomClicker) {
-      this.stopClickers();
-      this.initializeClickers();
-    }
-  }
-
-  stopClickers() {
-    if (this.autoClickerInterval) {
-      clearTimeout(this.autoClickerInterval);
-      this.autoClickerInterval = null;
-    }
-    
-    if (this.randomClickerInterval) {
-      clearInterval(this.randomClickerInterval);
-      this.randomClickerInterval = null;
-    }
-  }
-
-  // Get click statistics
-  getClickStats() {
+  // Debug methods
+  getStats() {
     return {
-      ...this.clickStats,
-      sessionDuration: Date.now() - this.clickStats.sessionStart
+      ...this.stats,
+      currentPhase: this.currentPhase,
+      cycleCount: this.cycleCount,
+      isActive: this.isAdsActive
     };
   }
 }
 
 // Initialize when page loads
 document.addEventListener('DOMContentLoaded', () => {
-  window.adManager = new EnhancedAdManager();
+  window.coordinatedAdManager = new CoordinatedAdManager();
 });
 
-// Handle page visibility changes
-document.addEventListener('visibilitychange', () => {
-  if (!document.hidden && window.adManager && window.adManager.isAdsActive) {
-    // Refresh ads when page becomes visible again
-    setTimeout(() => {
-      window.adManager.refreshAllAds();
-    }, 1000);
-  }
-});
-
-// Add global click tracking for additional popunder triggers
-document.addEventListener('click', (e) => {
-  if (window.adManager && window.adManager.isAdsActive && window.adManager.settings) {
-    // Configurable chance to trigger popunder on any click
-    if (Math.random() < window.adManager.settings.popunderChance) {
-      setTimeout(() => {
-        window.adManager.triggerPopunder();
-      }, 500);
-    }
-  }
-});
-
-// Console commands for debugging and control
+// Debug console
 window.adDebug = {
-  getStats: () => window.adManager?.getClickStats(),
-  stopClickers: () => window.adManager?.stopClickers(),
-  startClickers: () => window.adManager?.initializeClickers(),
-  simulateClick: (type = 'manual') => {
-    const ads = document.querySelectorAll('.popunder-trigger, .native-banner-container, .banner-container');
-    if (ads.length > 0) {
-      const randomAd = ads[Math.floor(Math.random() * ads.length)];
-      window.adManager?.simulateClick(randomAd, type);
-    }
-  }
+  getStats: () => window.coordinatedAdManager?.getStats(),
+  getCurrentPhase: () => window.coordinatedAdManager?.currentPhase,
+  forcePhaseTransition: (phase) => window.coordinatedAdManager?.transitionToPhase(phase),
+  endSession: () => window.coordinatedAdManager?.endSession()
 };
